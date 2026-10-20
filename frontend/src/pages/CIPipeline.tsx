@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CircleCheckBig, CircleX, Clock, RefreshCw, GitBranch, GitCommit } from 'lucide-react';
 import styles from './CIPipeline.module.css';
 
