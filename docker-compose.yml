@@ -1,0 +1,62 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: agileflow-db
+    environment:
+      POSTGRES_DB: agileflow
+      POSTGRES_USER: agileflow
+      POSTGRES_PASSWORD: agileflow_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U agileflow']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agileflow-api
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://agileflow:agileflow_dev@db:5432/agileflow
+      JWT_SECRET: supersecretjwtkey_change_in_prod
+      JWT_REFRESH_SECRET: supersecretrefreshjwtkey_change_in_prod
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - '4000:4000'
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agileflow-web
+    environment:
+      VITE_API_URL: http://localhost:4000/api
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+volumes:
+  postgres_data:

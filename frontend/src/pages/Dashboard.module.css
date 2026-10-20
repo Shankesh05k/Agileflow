@@ -1,0 +1,113 @@
+.page { display: flex; flex-direction: column; gap: var(--sp-6); max-width: 1100px; }
+
+.loading { color: var(--text-tertiary); font-size: 13px; }
+
+.pageHeader { margin-bottom: var(--sp-2); }
+.pageTitle { font-size: 20px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.02em; }
+.pageSubtitle { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
+
+/* Stats */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-3);
+}
+
+.stat {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-4) var(--sp-5);
+}
+
+.statHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sp-3);
+}
+
+.statLabel { font-size: 12px; color: var(--text-tertiary); font-weight: 500; }
+.statIcon { color: var(--text-tertiary); }
+.statValue { font-size: 28px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.03em; line-height: 1; }
+.statTrend { font-size: 11px; color: var(--text-tertiary); margin-top: var(--sp-1); }
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: var(--sp-4);
+}
+
+/* Card */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sp-4);
+}
+
+.cardTitle { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+.cardLink {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.cardLink:hover { color: var(--accent); text-decoration: none; }
+
+/* Sprint */
+.sprintContent { display: flex; flex-direction: column; gap: var(--sp-3); }
+.sprintName { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.sprintGoal { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+.progressRow { display: flex; justify-content: space-between; align-items: center; }
+.progressLabel { font-size: 12px; color: var(--text-secondary); }
+.progressPct { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+
+.progressTrack {
+  height: 5px;
+  background: var(--bg-active);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.sprintMeta { font-size: 11px; color: var(--text-tertiary); }
+
+/* Ticket list */
+.ticketList { display: flex; flex-direction: column; gap: 2px; }
+
+.ticketRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 7px var(--sp-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  cursor: default;
+}
+.ticketRow:hover { background: var(--bg-hover); }
+
+.ticketMeta { display: flex; gap: 4px; flex-shrink: 0; }
+.ticketTitle { flex: 1; font-size: 12px; color: var(--text-primary); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ticketState { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; }
+
+.empty { font-size: 12px; color: var(--text-tertiary); padding: var(--sp-3) 0; }

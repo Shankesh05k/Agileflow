@@ -1,0 +1,217 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+  POSTGRES_DB: agileflow_test
+  POSTGRES_USER: agileflow
+  POSTGRES_PASSWORD: secret
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 1. Backend lint + unit/integration tests
+  # ─────────────────────────────────────────────
+  backend:
+    name: Backend — lint, test, coverage
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U agileflow"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Lint (ESLint)
+        working-directory: backend
+        run: npx eslint "src/**/*.ts" --max-warnings 0
+
+      - name: Apply DB schema
+        working-directory: database
+        run: |
+          PGPASSWORD=${{ env.POSTGRES_PASSWORD }} psql \
+            -h localhost -U ${{ env.POSTGRES_USER }} -d ${{ env.POSTGRES_DB }} \
+            -f schema.sql
+          PGPASSWORD=${{ env.POSTGRES_PASSWORD }} psql \
+            -h localhost -U ${{ env.POSTGRES_USER }} -d ${{ env.POSTGRES_DB }} \
+            -f seed.sql
+
+      - name: Run tests with coverage
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://agileflow:secret@localhost:5432/agileflow_test
+          JWT_ACCESS_SECRET: ci-access-secret-32chars-minimum!!
+          JWT_REFRESH_SECRET: ci-refresh-secret-32chars-minimum!
+          NODE_ENV: test
+        run: npm run test:coverage
+
+      - name: Enforce 80 % coverage gate
+        working-directory: backend
+        run: |
+          LINES=$(node -e "
+            const r = require('./coverage/coverage-summary.json');
+            console.log(r.total.lines.pct);
+          ")
+          echo "Line coverage: ${LINES}%"
+          node -e "
+            const pct = parseFloat('${LINES}');
+            if (pct < 80) { console.error('Coverage below 80%: ' + pct); process.exit(1); }
+          "
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage/
+
+  # ─────────────────────────────────────────────
+  # 2. Frontend lint + unit tests
+  # ─────────────────────────────────────────────
+  frontend:
+    name: Frontend — lint, unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint (ESLint)
+        working-directory: frontend
+        run: npx eslint "src/**/*.{ts,tsx}" --max-warnings 0
+
+      - name: Type-check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: Unit tests (Vitest)
+        working-directory: frontend
+        run: npm test -- --run
+
+  # ─────────────────────────────────────────────
+  # 3. Docker build smoke test
+  # ─────────────────────────────────────────────
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t agileflow-backend ./backend
+
+      - name: Build frontend image
+        run: docker build -t agileflow-frontend ./frontend
+
+  # ─────────────────────────────────────────────
+  # 4. E2E (Cypress) — only on main branch push
+  # ─────────────────────────────────────────────
+  e2e:
+    name: E2E (Cypress)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U agileflow"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install all deps
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+          npm ci  # root for Cypress
+
+      - name: Apply DB schema + seed
+        working-directory: database
+        run: |
+          PGPASSWORD=secret psql -h localhost -U agileflow -d agileflow_test -f schema.sql
+          PGPASSWORD=secret psql -h localhost -U agileflow -d agileflow_test -f seed.sql
+
+      - name: Start backend
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://agileflow:secret@localhost:5432/agileflow_test
+          JWT_ACCESS_SECRET: ci-access-secret-32chars-minimum!!
+          JWT_REFRESH_SECRET: ci-refresh-secret-32chars-minimum!
+          PORT: 4000
+          NODE_ENV: production
+        run: node dist/index.js &
+
+      - name: Build & serve frontend
+        working-directory: frontend
+        run: |
+          npm run build
+          npx serve -s dist -l 5173 &
+
+      - name: Wait for services
+        run: |
+          npx wait-on http://localhost:4000/health
+          npx wait-on http://localhost:5173
+
+      - name: Run Cypress
+        run: npx cypress run --browser chrome --headless
+
+      - name: Upload Cypress screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots/
