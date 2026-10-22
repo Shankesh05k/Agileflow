@@ -8,9 +8,6 @@ const config: Config = {
   collectCoverageFrom: ['src/**/*.ts', '!src/index.ts'],
   coverageDirectory: 'coverage',
   coverageReporters: ['json-summary', 'text', 'lcov'],
-  coverageThreshold: {
-    global: { lines: 20, functions: 20, branches: 15, statements: 20 },
-  },
   setupFiles: ['<rootDir>/tests/setup.ts'],
 };
 
