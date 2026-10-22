@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest --coverage --forceExit",
+    "test:coverage": "jest --coverage --forceExit",
     "test:unit": "jest --testPathPattern=tests/unit --coverage",
     "test:integration": "jest --testPathPattern=tests/integration --coverage --runInBand",
     "lint": "eslint src --ext .ts"
