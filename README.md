@@ -20,16 +20,6 @@
 
 AgileFlow is a production-ready project management tool built for engineering teams. It demonstrates a modern full-stack architecture: JWT authentication with refresh-token rotation, role-based access control, a workflow-driven Kanban board, sprint velocity analytics, an immutable audit log, a 4-stage GitHub Actions CI/CD pipeline — and an **AI ticket-draft assistant** that turns a one-line title into a fully drafted ticket.
 
-> **Live demo** · [agileflow.dev](https://agileflow.dev) *(coming soon)*
-
----
-
-## Screenshots
-
-> Dashboard · Kanban Board · Analytics · Sprint Management · AI Ticket Draft
-
-*(Add screenshots here once deployed)*
-
 ---
 
 ## Features
