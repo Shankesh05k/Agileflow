@@ -28,7 +28,7 @@ router.get('/tickets/:id',     authenticate, Tickets.getTicket);
 router.post('/tickets',
   authenticate, authorize('admin','developer'),
   body('title').notEmpty().isLength({ max: 500 }),
-  body('state_id').isUUID(),
+  body('state_id').isString().notEmpty(),
   body('type').isIn(['story','task','bug','epic']),
   body('priority').isIn(['low','medium','high','critical']),
   validate,
@@ -44,7 +44,7 @@ router.delete('/tickets/:id',
 );
 router.post('/tickets/:id/move',
   authenticate, authorize('admin','developer'),
-  body('state_id').isUUID(),
+  body('state_id').isString().notEmpty(),
   validate,
   Tickets.moveTicket
 );
