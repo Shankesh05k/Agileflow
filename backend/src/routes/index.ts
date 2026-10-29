@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { body } from 'express-validator';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -46,6 +47,20 @@ router.post('/tickets/:id/move',
   body('state_id').isUUID(),
   validate,
   Tickets.moveTicket
+);
+
+// Separate, tighter limit — each call spends a Groq free-tier request.
+const aiDraftLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'Too many AI draft requests, try again shortly' },
+});
+router.post('/tickets/ai-draft',
+  authenticate, authorize('admin','developer'),
+  aiDraftLimiter,
+  body('title').notEmpty().isLength({ max: 500 }),
+  validate,
+  Tickets.draftTicket
 );
 
 // ── Sprints ───────────────────────────────────────────────────────────────

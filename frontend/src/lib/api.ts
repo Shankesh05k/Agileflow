@@ -1,4 +1,4 @@
-import { AuthTokens, User, Ticket, Sprint, WorkflowState, WorkflowTransition, AuditLog, VelocityData } from '../types';
+import { AuthTokens, User, Ticket, Sprint, WorkflowState, WorkflowTransition, AuditLog, VelocityData, TicketDraft } from '../types';
 
 const BASE = '/api';
 
@@ -89,6 +89,8 @@ export const tickets = {
     request(`/tickets/${id}`, { method: 'DELETE' }),
   move: (id: string, state_id: string): Promise<Ticket> =>
     request(`/tickets/${id}/move`, { method: 'POST', body: JSON.stringify({ state_id }) }),
+  aiDraft: (title: string): Promise<TicketDraft> =>
+    request('/tickets/ai-draft', { method: 'POST', body: JSON.stringify({ title }) }),
 };
 
 // ── Sprints ───────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { X } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 import { Ticket, WorkflowState, TicketType, TicketPriority } from '../types';
 import { tickets as ticketsApi } from '../lib/api';
 import { Button } from './ui/Button';
@@ -27,6 +27,8 @@ export default function TicketModal({ ticket, states, onClose, onSaved }: Props)
   const [points, setPoints] = useState(String(ticket?.story_points ?? ''));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -49,6 +51,23 @@ export default function TicketModal({ ticket, states, onClose, onSaved }: Props)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
       setSaving(false);
+    }
+  }
+
+  async function handleAiDraft() {
+    if (!title.trim() || aiLoading) return;
+    setAiLoading(true);
+    setAiError('');
+    try {
+      const draft = await ticketsApi.aiDraft(title.trim());
+      setDescription(draft.description);
+      setType(draft.type);
+      setPriority(draft.priority);
+      setPoints(String(draft.story_points));
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'AI draft failed');
+    } finally {
+      setAiLoading(false);
     }
   }
 
@@ -76,7 +95,19 @@ export default function TicketModal({ ticket, states, onClose, onSaved }: Props)
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.field}>
-            <label className={styles.label}>Title *</label>
+            <div className={styles.labelRow}>
+              <label className={styles.label}>Title *</label>
+              <button
+                type="button"
+                className={styles.aiBtn}
+                onClick={handleAiDraft}
+                disabled={!title.trim() || aiLoading}
+                title="Draft description, type, priority and story points from the title"
+              >
+                <Sparkles size={12} className={aiLoading ? styles.aiSpin : undefined} />
+                {aiLoading ? 'Drafting…' : 'AI Draft'}
+              </button>
+            </div>
             <input
               className={styles.input}
               value={title}
@@ -85,6 +116,7 @@ export default function TicketModal({ ticket, states, onClose, onSaved }: Props)
               required
               autoFocus
             />
+            {aiError && <p className={styles.error}>{aiError}</p>}
           </div>
 
           <div className={styles.field}>

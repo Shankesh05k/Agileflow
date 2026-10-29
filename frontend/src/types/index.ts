@@ -81,3 +81,9 @@ export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
+export interface TicketDraft {
+  description: string;
+  type: TicketType;
+  priority: TicketPriority;
+  story_points: number;
+}

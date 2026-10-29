@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import pool, { query, queryOne } from '../db/pool';
 import { logAudit } from '../services/audit';
 import { Ticket } from '../types';
+import { generateTicketDraft } from '../services/ai';
 
 const PROJECT_ID = '00000000-0000-0000-0001-000000000001'; // single-tenant seed
 
@@ -139,6 +140,25 @@ export async function deleteTicket(req: Request, res: Response): Promise<void> {
   });
 
   res.status(204).send();
+}
+export async function draftTicket(req: Request, res: Response): Promise<void> {
+  const { title } = req.body as { title?: string };
+  if (!title || !title.trim()) {
+    res.status(400).json({ error: 'title is required' });
+    return;
+  }
+
+  try {
+    const draft = await generateTicketDraft(title.trim());
+    res.json(draft);
+  } catch (err) {
+    // Convenience feature on top of manual ticket creation —
+    // never let an LLM/network failure read as a 500 server bug.
+    res.status(502).json({
+      error: 'AI draft unavailable',
+      detail: err instanceof Error ? err.message : 'Unknown error',
+    });
+  }
 }
 
 export async function moveTicket(req: Request, res: Response): Promise<void> {
