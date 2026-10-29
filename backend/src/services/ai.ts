@@ -34,7 +34,7 @@ export async function generateTicketDraft(title: string): Promise<TicketDraft> {
     throw new Error('GROQ_API_KEY is not configured on the server');
   }
 
-  const model = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile';
+  const model = process.env.GROQ_MODEL ?? 'openai/gpt-oss-20b';
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15_000);
